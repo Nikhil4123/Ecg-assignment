@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  responses ESGResponse[]
+}
+
+model ESGResponse {
+  id                           String   @id @default(cuid())
+  userId                       String
+  financialYear                String
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+  
+  // Environmental metrics
+  totalElectricityConsumption  Float?
+  renewableElectricityConsumption Float?
+  totalFuelConsumption         Float?
+  carbonEmissions              Float?
+  
+  // Social metrics
+  totalEmployees               Int?
+  femaleEmployees              Int?
+  avgTrainingHoursPerEmployee  Float?
+  communityInvestmentSpend     Float?
+  
+  // Governance metrics
+  independentBoardMembersPercent Float?
+  hasDataPrivacyPolicy         Boolean?
+  totalRevenue                 Float?
+  
+  // Auto-calculated metrics
+  carbonIntensity              Float?
+  renewableElectricityRatio    Float?
+  diversityRatio               Float?
+  communitySpendRatio          Float?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+} 
