@@ -51,10 +51,24 @@ export default function DashboardPage() {
       label: 'Past Responses',
       icon: History,
       component: PastResponses
+    },
+    {
+      id: 'profile',
+      label: 'Profile Settings',
+      icon: User,
+      component: null // This will be handled separately
     }
   ]
 
   const ActiveComponent = menuItems.find(item => item.id === activeTab)?.component
+
+  const handleTabClick = (tabId: string) => {
+    if (tabId === 'profile') {
+      router.push('/profile')
+    } else {
+      setActiveTab(tabId)
+    }
+  }
 
   return (
     <div className={`h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex overflow-hidden`}>
@@ -93,7 +107,7 @@ export default function DashboardPage() {
              return (
                <button
                  key={item.id}
-                 onClick={() => setActiveTab(item.id)}
+                 onClick={() => handleTabClick(item.id)}
                  className={`
                    w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 group hover-lift
                    ${activeTab === item.id
@@ -192,9 +206,12 @@ export default function DashboardPage() {
                      {user?.email}
                    </p>
                  </div>
-                 <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center hover-scale cursor-pointer`}>
+                 <button
+                   onClick={() => router.push('/profile')}
+                   className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} flex items-center justify-center hover-scale cursor-pointer transition-colors`}
+                 >
                    <User className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-                 </div>
+                 </button>
                </div>
              </div>
           </div>

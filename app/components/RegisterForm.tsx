@@ -1,21 +1,48 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { User, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
+import { 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  UserPlus, 
+  User, 
+  Shield, 
+  Sparkles,
+  ArrowLeft,
+  CheckCircle,
+  AlertCircle,
+  Check,
+  X
+} from 'lucide-react'
 
 export default function RegisterForm() {
+  const router = useRouter()
+  const { register } = useAuth()
+  const { isDarkMode } = useTheme()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
-  const { isDarkMode } = useTheme()
+  const [error, setError] = useState('')
+
+  // Password validation
+  const passwordRequirements = {
+    length: password.length >= 6,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  }
+
+  const allRequirementsMet = Object.values(passwordRequirements).every(Boolean)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,275 +53,241 @@ export default function RegisterForm() {
       return
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long')
+    if (!allRequirementsMet) {
+      setError('Please meet all password requirements')
       return
     }
 
     setLoading(true)
-    const success = await register(name, email, password)
-    if (!success) {
-      setError('Registration failed. Email might already be in use.')
+
+    try {
+      const success = await register(name, email, password)
+      if (success) {
+        router.push('/dashboard')
+      } else {
+        setError('Registration failed. Please try again.')
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  const passwordRequirements = [
-    { label: 'At least 6 characters', met: password.length >= 6 },
-    { label: 'Contains a number', met: /\d/.test(password) },
-    { label: 'Contains a letter', met: /[a-zA-Z]/.test(password) },
-  ]
-
   return (
-    <div className="space-y-4">
-      {/* Welcome Header */}
-      <div className="text-center">
-        <div className={`w-12 h-12 mx-auto mb-3 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} flex items-center justify-center`}>
-          <User className={`w-6 h-6 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-        </div>
-        <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          Create your account
-        </h3>
-        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
-          Join the ESG Platform community
-        </p>
-      </div>
-
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        {error && (
-          <div className={`${isDarkMode ? 'bg-red-900/50 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-600'} border px-4 py-3 rounded-lg text-sm flex items-center space-x-2`}>
-            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-            <span>{error}</span>
+    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${isDarkMode ? 'bg-dark-bg' : 'bg-light-bg'} transition-all duration-300`}>
+      <div className="max-w-md w-full space-y-8 animate-fade-in-up">
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mb-6 animate-bounce-in">
+            <UserPlus className="h-8 w-8 text-white" />
           </div>
-        )}
-        
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label htmlFor="name" className={`block text-xs font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-              Full Name
-            </label>
-            <div className="relative">
-              <div className={`absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                <User className="h-4 w-4" />
-              </div>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`pl-8 appearance-none relative block w-full px-2 py-2 border rounded-md focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all duration-200 ${
-                  isDarkMode 
-                    ? 'border-gray-600 placeholder-gray-400 text-white bg-gray-700 focus:ring-green-500 focus:border-green-500 hover:border-gray-500' 
-                    : 'border-gray-300 placeholder-gray-500 text-gray-900 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
-                }`}
-                placeholder="Full name"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label htmlFor="email" className={`block text-xs font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-              Email
-            </label>
-            <div className="relative">
-              <div className={`absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                <Mail className="h-4 w-4" />
-              </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`pl-8 appearance-none relative block w-full px-2 py-2 border rounded-md focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all duration-200 ${
-                  isDarkMode 
-                    ? 'border-gray-600 placeholder-gray-400 text-white bg-gray-700 focus:ring-green-500 focus:border-green-500 hover:border-gray-500' 
-                    : 'border-gray-300 placeholder-gray-500 text-gray-900 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
-                }`}
-                placeholder="Email"
-              />
-            </div>
-          </div>
+          <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-dark-text' : 'text-light-text'} gradient-text`}>
+            Create Account
+          </h2>
+          <p className={`mt-2 text-sm ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`}>
+            Join the ESG Platform community
+          </p>
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="password" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-            Password
-          </label>
-          <div className="relative">
-            <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              <Lock className="h-5 w-5" />
+        {/* Form */}
+        <div className={`card p-8 animate-fade-in-up`} style={{ animationDelay: '0.2s' }}>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in-up">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+                <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
+              </div>
             </div>
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="new-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`pl-10 pr-10 appearance-none relative block w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all duration-200 ${
-                isDarkMode 
-                  ? 'border-gray-600 placeholder-gray-400 text-white bg-gray-700 focus:ring-green-500 focus:border-green-500 hover:border-gray-500' 
-                  : 'border-gray-300 placeholder-gray-500 text-gray-900 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
-              }`}
-              placeholder="Create a strong password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className={`absolute inset-y-0 right-0 pr-3 flex items-center ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-          
-          {/* Password Requirements */}
-          {password && (
-            <div className="mt-2 space-y-1">
-              {passwordRequirements.map((requirement, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <CheckCircle className={`w-4 h-4 ${requirement.met ? 'text-green-500' : 'text-gray-400'}`} />
-                  <span className={`text-xs ${requirement.met ? (isDarkMode ? 'text-green-400' : 'text-green-600') : (isDarkMode ? 'text-gray-500' : 'text-gray-500')}`}>
-                    {requirement.label}
-                  </span>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="name" className={`block text-sm font-medium ${isDarkMode ? 'text-dark-text' : 'text-light-text'} mb-2`}>
+                Full Name
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input-enhanced pr-10"
+                  placeholder="Enter your full name"
+                  required
+                />
+                <User className={`absolute right-3 top-3 h-5 w-5 ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`} />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="email" className={`block text-sm font-medium ${isDarkMode ? 'text-dark-text' : 'text-light-text'} mb-2`}>
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-enhanced pr-10"
+                  placeholder="Enter your email"
+                  required
+                />
+                <Mail className={`absolute right-3 top-3 h-5 w-5 ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`} />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className={`block text-sm font-medium ${isDarkMode ? 'text-dark-text' : 'text-light-text'} mb-2`}>
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-enhanced pr-10"
+                  placeholder="Create a strong password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={`absolute right-3 top-3 ${isDarkMode ? 'text-dark-textSecondary hover:text-dark-text' : 'text-light-textSecondary hover:text-light-text'}`}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+
+              {/* Password Requirements */}
+              {password && (
+                <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className={`text-xs font-medium mb-2 ${isDarkMode ? 'text-dark-text' : 'text-light-text'}`}>
+                    Password Requirements:
+                  </p>
+                  <div className="space-y-1">
+                    {Object.entries(passwordRequirements).map(([key, met]) => (
+                      <div key={key} className="flex items-center text-xs">
+                        {met ? (
+                          <Check className="h-3 w-3 text-green-500 mr-2" />
+                        ) : (
+                          <X className="h-3 w-3 text-red-500 mr-2" />
+                        )}
+                        <span className={`${met ? 'text-green-600' : 'text-red-600'}`}>
+                          {key === 'length' && 'At least 6 characters'}
+                          {key === 'uppercase' && 'One uppercase letter'}
+                          {key === 'lowercase' && 'One lowercase letter'}
+                          {key === 'number' && 'One number'}
+                          {key === 'special' && 'One special character'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="space-y-2">
-          <label htmlFor="confirmPassword" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-            Confirm Password
-          </label>
-          <div className="relative">
-            <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              <Lock className="h-5 w-5" />
-            </div>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              autoComplete="new-password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`pl-10 pr-10 appearance-none relative block w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm transition-all duration-200 ${
-                isDarkMode 
-                  ? 'border-gray-600 placeholder-gray-400 text-white bg-gray-700 focus:ring-green-500 focus:border-green-500 hover:border-gray-500' 
-                  : 'border-gray-300 placeholder-gray-500 text-gray-900 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
-              }`}
-              placeholder="Confirm your password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className={`absolute inset-y-0 right-0 pr-3 flex items-center ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-          
-          {/* Password Match Indicator */}
-          {confirmPassword && (
-            <div className="flex items-center space-x-2 mt-1">
-              <CheckCircle className={`w-4 h-4 ${password === confirmPassword ? 'text-green-500' : 'text-gray-400'}`} />
-              <span className={`text-xs ${password === confirmPassword ? (isDarkMode ? 'text-green-400' : 'text-green-600') : (isDarkMode ? 'text-gray-500' : 'text-gray-500')}`}>
-                {password === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center">
-          <input
-            id="terms"
-            name="terms"
-            type="checkbox"
-            required
-            className={`h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 ${
-              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white'
-            }`}
-          />
-          <label htmlFor="terms" className={`ml-2 block text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            I agree to the{' '}
-            <a href="#" className={`font-medium hover:underline ${isDarkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'}`}>
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="#" className={`font-medium hover:underline ${isDarkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-500'}`}>
-              Privacy Policy
-            </a>
-          </label>
-        </div>
-
-        <div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
-          >
-            {loading ? (
-              <div className="flex items-center space-x-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Creating account...</span>
+            <div>
+              <label htmlFor="confirmPassword" className={`block text-sm font-medium ${isDarkMode ? 'text-dark-text' : 'text-light-text'} mb-2`}>
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="input-enhanced pr-10"
+                  placeholder="Confirm your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className={`absolute right-3 top-3 ${isDarkMode ? 'text-dark-textSecondary hover:text-dark-text' : 'text-light-textSecondary hover:text-light-text'}`}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
-            ) : (
-              'Create account'
-            )}
-          </button>
-        </div>
-      </form>
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+              )}
+            </div>
 
-      {/* Divider */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className={`px-2 ${isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>
-            Or continue with
-          </span>
-        </div>
-      </div>
+            <div className="flex items-center">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                required
+              />
+              <label htmlFor="terms" className={`ml-2 block text-sm ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`}>
+                I agree to the{' '}
+                <a href="#" className={`font-medium ${isDarkMode ? 'text-dark-accent hover:text-dark-accentHover' : 'text-light-accent hover:text-light-accentHover'} transition-colors`}>
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="#" className={`font-medium ${isDarkMode ? 'text-dark-accent hover:text-dark-accentHover' : 'text-light-accent hover:text-light-accentHover'} transition-colors`}>
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
 
-      {/* Social Login Buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          className={`w-full inline-flex justify-center py-2 px-4 border rounded-lg shadow-sm text-sm font-medium transition-colors ${
-            isDarkMode 
-              ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600' 
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          <span className="ml-2">Google</span>
-        </button>
-        <button
-          type="button"
-          className={`w-full inline-flex justify-center py-2 px-4 border rounded-lg shadow-sm text-sm font-medium transition-colors ${
-            isDarkMode 
-              ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600' 
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-          </svg>
-          <span className="ml-2">Twitter</span>
-        </button>
+            <button
+              type="submit"
+              disabled={loading || !allRequirementsMet || password !== confirmPassword}
+              className="btn-primary w-full group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating account...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <UserPlus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  Create Account
+                </div>
+              )}
+            </button>
+          </form>
+
+          {/* Sign In Link */}
+          <div className="mt-6 text-center">
+            <p className={`text-sm ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`}>
+              Already have an account?{' '}
+              <button
+                onClick={() => router.push('/auth/login')}
+                className={`font-medium ${isDarkMode ? 'text-dark-accent hover:text-dark-accentHover' : 'text-light-accent hover:text-light-accentHover'} transition-colors group`}
+              >
+                Sign in
+                <ArrowLeft className="inline h-4 w-4 ml-1 group-hover:-translate-x-1 transition-transform" />
+              </button>
+            </p>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <div className={`card p-4 text-center hover-lift`}>
+            <Shield className={`h-8 w-8 mx-auto mb-2 ${isDarkMode ? 'text-dark-accent' : 'text-light-accent'}`} />
+            <h3 className={`text-sm font-medium ${isDarkMode ? 'text-dark-text' : 'text-light-text'}`}>Secure</h3>
+            <p className={`text-xs ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`}>Bank-level security</p>
+          </div>
+          <div className={`card p-4 text-center hover-lift`}>
+            <Sparkles className={`h-8 w-8 mx-auto mb-2 ${isDarkMode ? 'text-dark-accent' : 'text-light-accent'}`} />
+            <h3 className={`text-sm font-medium ${isDarkMode ? 'text-dark-text' : 'text-light-text'}`}>Modern</h3>
+            <p className={`text-xs ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`}>Latest features</p>
+          </div>
+          <div className={`card p-4 text-center hover-lift`}>
+            <CheckCircle className={`h-8 w-8 mx-auto mb-2 ${isDarkMode ? 'text-dark-accent' : 'text-light-accent'}`} />
+            <h3 className={`text-sm font-medium ${isDarkMode ? 'text-dark-text' : 'text-light-text'}`}>Reliable</h3>
+            <p className={`text-xs ${isDarkMode ? 'text-dark-textSecondary' : 'text-light-textSecondary'}`}>99.9% uptime</p>
+          </div>
+        </div>
       </div>
     </div>
   )
