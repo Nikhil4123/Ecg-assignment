@@ -44,11 +44,5 @@ export default function Home() {
   }
 
   // Otherwise show landing page
-  return (
-    <LandingPage
-      onGetStarted={() => router.push('/auth/register')}
-      isDarkMode={isDarkMode}
-      toggleDarkMode={toggleDarkMode}
-    />
-  )
+  return <LandingPage />
 } 
