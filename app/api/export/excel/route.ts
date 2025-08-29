@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
-
-const prisma = new PrismaClient()
 
 // Helper function to verify JWT token
 async function verifyToken(request: NextRequest) {
