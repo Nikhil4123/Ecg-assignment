@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useNotifications } from '../context/NotificationContext'
 import { 
   Mail, 
   Lock, 
@@ -24,6 +25,7 @@ export default function RegisterForm() {
   const router = useRouter()
   const { register } = useAuth()
   const { isDarkMode } = useTheme()
+  const { success, error: showError } = useNotifications()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -31,7 +33,6 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   // Password validation
   const passwordRequirements = {
@@ -46,29 +47,29 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      showError('Validation Error', 'Passwords do not match')
       return
     }
 
     if (!allRequirementsMet) {
-      setError('Please meet all password requirements')
+      showError('Password Requirements', 'Please meet all password requirements')
       return
     }
 
     setLoading(true)
 
     try {
-      const success = await register(name, email, password)
-      if (success) {
-        router.push('/dashboard')
+      const registerSuccess = await register(name, email, password)
+      if (registerSuccess) {
+        success('Registration Successful', `Welcome ${name}! Redirecting to dashboard...`)
+        setTimeout(() => router.push('/dashboard'), 1000)
       } else {
-        setError('Registration failed. Please try again.')
+        showError('Registration Failed', 'Unable to create account. Please try again.')
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      showError('Registration Error', 'An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -92,14 +93,6 @@ export default function RegisterForm() {
 
         {/* Form */}
         <div className={`card p-8 animate-fade-in-up`} style={{ animationDelay: '0.2s' }}>
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in-up">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
-              </div>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

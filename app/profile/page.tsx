@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '../context/ThemeContext'
+import { useNotifications } from '../context/NotificationContext'
 import { 
   User, 
   Mail, 
@@ -37,11 +38,10 @@ interface UserProfile {
 export default function ProfilePage() {
   const router = useRouter()
   const { isDarkMode } = useTheme()
+  const { success: showSuccess, error: showError } = useNotifications()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   
   // Form state
   const [name, setName] = useState('')
@@ -78,29 +78,27 @@ export default function ProfilePage() {
       } else if (response.status === 401) {
         localStorage.removeItem('token')
         router.push('/auth/login')
-      } else {
-        setError('Failed to load profile')
-      }
-    } catch (error) {
-      setError('Failed to load profile')
-    } finally {
+             } else {
+         showError('Profile Load Failed', 'Failed to load profile')
+       }
+     } catch (error) {
+       showError('Profile Load Error', 'Failed to load profile')
+     } finally {
       setLoading(false)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
 
     // Validate passwords if changing password
     if (newPassword) {
       if (newPassword.length < 6) {
-        setError('New password must be at least 6 characters long')
+        showError('Password Validation', 'New password must be at least 6 characters long')
         return
       }
       if (newPassword !== confirmPassword) {
-        setError('New passwords do not match')
+        showError('Password Validation', 'New passwords do not match')
         return
       }
     }
@@ -125,18 +123,18 @@ export default function ProfilePage() {
 
       const data = await response.json()
 
-      if (response.ok) {
-        setSuccess('Profile updated successfully!')
-        setProfile(prev => prev ? { ...prev, ...data } : null)
-        setCurrentPassword('')
-        setNewPassword('')
-        setConfirmPassword('')
-      } else {
-        setError(data.error || 'Failed to update profile')
-      }
-    } catch (error) {
-      setError('Failed to update profile')
-    } finally {
+             if (response.ok) {
+         showSuccess('Profile Updated', 'Profile updated successfully!')
+         setProfile(prev => prev ? { ...prev, ...data } : null)
+         setCurrentPassword('')
+         setNewPassword('')
+         setConfirmPassword('')
+       } else {
+         showError('Update Failed', data.error || 'Failed to update profile')
+       }
+     } catch (error) {
+       showError('Update Error', 'Failed to update profile')
+     } finally {
       setSaving(false)
     }
   }
@@ -252,24 +250,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Error/Success Messages */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in-up">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <p className="text-red-800 dark:text-red-200">{error}</p>
-            </div>
-          </div>
-        )}
         
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg animate-fade-in-up">
-            <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <p className="text-green-800 dark:text-green-200">{success}</p>
-            </div>
-          </div>
-        )}
 
         {/* Profile Form */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

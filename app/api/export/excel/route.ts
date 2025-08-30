@@ -32,20 +32,34 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user and their responses
+    // Get responseId from query parameters
+    const { searchParams } = new URL(request.url)
+    const responseId = searchParams.get('responseId')
+
+    if (!responseId) {
+      return NextResponse.json(
+        { error: 'Response ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Get user info
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true }
     })
 
-    const responses = await prisma.eSGResponse.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
+    // Get specific response
+    const response = await prisma.eSGResponse.findFirst({
+      where: { 
+        id: responseId,
+        userId: userId // Ensure user can only access their own responses
+      }
     })
 
-    if (responses.length === 0) {
+    if (!response) {
       return NextResponse.json(
-        { error: 'No data to export' },
+        { error: 'Response not found' },
         { status: 404 }
       )
     }
@@ -53,71 +67,47 @@ export async function GET(request: NextRequest) {
     // Create workbook
     const workbook = XLSX.utils.book_new()
 
-    // Summary sheet
-    const latestResponse = responses[0]
-    const summaryData = [
-      ['ESG Questionnaire Summary'],
+    // Response details sheet
+    const responseData = [
+      ['ESG Questionnaire Response'],
       [''],
       ['Generated for:', user?.name],
       ['Email:', user?.email],
       ['Generated on:', new Date().toLocaleDateString()],
+      ['Response ID:', responseId],
       [''],
-      ['Financial Year:', latestResponse.financialYear],
+      ['Financial Year:', response.financialYear],
       [''],
       ['Environmental Metrics'],
       ['Metric', 'Value', 'Unit'],
-      ['Total Electricity Consumption', latestResponse.totalElectricityConsumption, 'kWh'],
-      ['Renewable Electricity Consumption', latestResponse.renewableElectricityConsumption, 'kWh'],
-      ['Total Fuel Consumption', latestResponse.totalFuelConsumption, 'liters'],
-      ['Carbon Emissions', latestResponse.carbonEmissions, 'T CO2e'],
+      ['Total Electricity Consumption', response.totalElectricityConsumption?.toLocaleString() || 'N/A', 'kWh'],
+      ['Renewable Electricity Consumption', response.renewableElectricityConsumption?.toLocaleString() || 'N/A', 'kWh'],
+      ['Total Fuel Consumption', response.totalFuelConsumption?.toLocaleString() || 'N/A', 'liters'],
+      ['Carbon Emissions', response.carbonEmissions?.toLocaleString() || 'N/A', 'T CO2e'],
       [''],
       ['Social Metrics'],
       ['Metric', 'Value', 'Unit'],
-      ['Total Employees', latestResponse.totalEmployees, ''],
-      ['Female Employees', latestResponse.femaleEmployees, ''],
-      ['Avg Training Hours per Employee', latestResponse.avgTrainingHoursPerEmployee, 'hours'],
-      ['Community Investment Spend', latestResponse.communityInvestmentSpend, 'INR'],
+      ['Total Employees', response.totalEmployees?.toLocaleString() || 'N/A', ''],
+      ['Female Employees', response.femaleEmployees?.toLocaleString() || 'N/A', ''],
+      ['Avg Training Hours per Employee', response.avgTrainingHoursPerEmployee?.toString() || 'N/A', 'hours'],
+      ['Community Investment Spend', response.communityInvestmentSpend ? `₹${response.communityInvestmentSpend.toLocaleString()}` : 'N/A', 'INR'],
       [''],
       ['Governance Metrics'],
       ['Metric', 'Value', 'Unit'],
-      ['Independent Board Members', latestResponse.independentBoardMembersPercent, '%'],
-      ['Data Privacy Policy', latestResponse.hasDataPrivacyPolicy ? 'Yes' : 'No', ''],
-      ['Total Revenue', latestResponse.totalRevenue, 'INR'],
+      ['Independent Board Members', response.independentBoardMembersPercent ? `${response.independentBoardMembersPercent}%` : 'N/A', ''],
+      ['Data Privacy Policy', response.hasDataPrivacyPolicy ? 'Yes' : 'No', ''],
+      ['Total Revenue', response.totalRevenue ? `₹${response.totalRevenue.toLocaleString()}` : 'N/A', 'INR'],
       [''],
       ['Calculated Metrics'],
       ['Metric', 'Value', 'Unit'],
-      ['Carbon Intensity', latestResponse.carbonIntensity, 'T CO2e/INR'],
-      ['Renewable Electricity Ratio', latestResponse.renewableElectricityRatio, '%'],
-      ['Diversity Ratio', latestResponse.diversityRatio, '%'],
-      ['Community Spend Ratio', latestResponse.communitySpendRatio, '%'],
+      ['Carbon Intensity', response.carbonIntensity?.toFixed(6) || 'N/A', 'T CO2e/INR'],
+      ['Renewable Electricity Ratio', response.renewableElectricityRatio ? `${response.renewableElectricityRatio.toFixed(2)}%` : 'N/A', ''],
+      ['Diversity Ratio', response.diversityRatio ? `${response.diversityRatio.toFixed(2)}%` : 'N/A', ''],
+      ['Community Spend Ratio', response.communitySpendRatio ? `${response.communitySpendRatio.toFixed(2)}%` : 'N/A', ''],
     ]
 
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary')
-
-    // Historical data sheet
-    const historicalData = responses.map(response => ({
-      'Financial Year': response.financialYear,
-      'Created Date': new Date(response.createdAt).toLocaleDateString(),
-      'Total Electricity (kWh)': response.totalElectricityConsumption,
-      'Renewable Electricity (kWh)': response.renewableElectricityConsumption,
-      'Total Fuel (liters)': response.totalFuelConsumption,
-      'Carbon Emissions (T CO2e)': response.carbonEmissions,
-      'Total Employees': response.totalEmployees,
-      'Female Employees': response.femaleEmployees,
-      'Avg Training Hours': response.avgTrainingHoursPerEmployee,
-      'Community Investment (INR)': response.communityInvestmentSpend,
-      'Independent Board Members (%)': response.independentBoardMembersPercent,
-      'Data Privacy Policy': response.hasDataPrivacyPolicy ? 'Yes' : 'No',
-      'Total Revenue (INR)': response.totalRevenue,
-      'Carbon Intensity (T CO2e/INR)': response.carbonIntensity,
-      'Renewable Electricity Ratio (%)': response.renewableElectricityRatio,
-      'Diversity Ratio (%)': response.diversityRatio,
-      'Community Spend Ratio (%)': response.communitySpendRatio,
-    }))
-
-    const historicalSheet = XLSX.utils.json_to_sheet(historicalData)
-    XLSX.utils.book_append_sheet(workbook, historicalSheet, 'Historical Data')
+    const responseSheet = XLSX.utils.aoa_to_sheet(responseData)
+    XLSX.utils.book_append_sheet(workbook, responseSheet, 'Response Details')
 
     // Generate Excel file
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
@@ -125,7 +115,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(excelBuffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': 'attachment; filename="esg-questionnaire-summary.xlsx"'
+        'Content-Disposition': `attachment; filename="esg-response-${responseId}.xlsx"`
       }
     })
 

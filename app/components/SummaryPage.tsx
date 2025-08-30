@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, Download, FileText, BarChart3, PieChart as PieChartIcon, Shield } from 'lucide-react'
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Shield } from 'lucide-react'
+import ExportManager from './ExportManager'
 
 interface ESGResponse {
   id: string
@@ -32,7 +33,6 @@ export default function SummaryPage() {
   const { isDarkMode } = useTheme()
   const [responses, setResponses] = useState<ESGResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     fetchResponses()
@@ -57,59 +57,7 @@ export default function SummaryPage() {
     }
   }
 
-  const exportToPDF = async () => {
-    setExporting(true)
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/export/pdf', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'esg-questionnaire-summary.pdf'
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-      }
-    } catch (error) {
-      console.error('Error exporting PDF:', error)
-    } finally {
-      setExporting(false)
-    }
-  }
 
-  const exportToExcel = async () => {
-    setExporting(true)
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/export/excel', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'esg-questionnaire-summary.xlsx'
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-      }
-    } catch (error) {
-      console.error('Error exporting Excel:', error)
-    } finally {
-      setExporting(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -173,32 +121,7 @@ export default function SummaryPage() {
                 </p>
               </div>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={exportToPDF}
-                disabled={exporting}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-all duration-200 ${
-                  isDarkMode 
-                    ? 'bg-red-600 hover:bg-red-700 text-white' 
-                    : 'bg-red-600 hover:bg-red-700 text-white'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
-              </button>
-              <button
-                onClick={exportToExcel}
-                disabled={exporting}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-all duration-200 ${
-                  isDarkMode 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-green-600 hover:bg-green-700 text-white'
-                }`}
-              >
-                <Download className="w-4 h-4" />
-                <span>{exporting ? 'Exporting...' : 'Export Excel'}</span>
-              </button>
-            </div>
+                         <ExportManager responses={responses} />
           </div>
         </div>
 

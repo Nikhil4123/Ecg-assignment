@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import ThemeToggle from '../../components/ThemeToggle'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -46,12 +47,7 @@ export default function LoginPage() {
           {/* Right side controls */}
           <div className="flex items-center space-x-4">
             {/* Dark mode toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
-            >
-              {isDarkMode ? '☀️' : '🌙'}
-            </button>
+            <ThemeToggle variant="switch" size="md" />
 
             {/* Back to home */}
             <Link
@@ -87,12 +83,6 @@ export default function LoginPage() {
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
-              {error && (
-                <div className={`${isDarkMode ? 'bg-red-900/50 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-600'} border px-4 py-3 rounded-lg text-sm flex items-center space-x-2`}>
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span>{error}</span>
-                </div>
-              )}
               
               <div className="space-y-2">
                 <label htmlFor="email" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>

@@ -10,11 +10,10 @@ import {
   LogOut, 
   Menu, 
   X, 
-  Sun, 
-  Moon,
   ChevronRight,
   User
 } from 'lucide-react'
+import ThemeToggle from '../components/ThemeToggle'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import ESGQuestionnaire from '../components/ESGQuestionnaire'
@@ -128,19 +127,8 @@ export default function DashboardPage() {
         {/* Sidebar Footer */}
         <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <div className="space-y-2">
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className={`
-                w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
-                ${isDarkMode ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
-              `}
-            >
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              <span className="font-medium">
-                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-              </span>
-            </button>
+                         {/* Theme Toggle */}
+             <ThemeToggle variant="switch" size="md" className="w-full justify-start" />
 
             {/* Logout */}
             <button
@@ -186,34 +174,31 @@ export default function DashboardPage() {
               </h2>
             </div>
 
-                         {/* Right side controls */}
-             <div className="flex items-center space-x-4">
-               {/* Theme Toggle */}
-               <button
-                 onClick={toggleDarkMode}
-                 className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
-               >
-                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-               </button>
+                                                   {/* Right side controls */}
+              <div className="flex items-center space-x-4">
+                {/* Theme Toggle */}
+                <div className="flex items-center">
+                  <ThemeToggle variant="switch" size="md" />
+                </div>
 
-               {/* User Profile */}
-               <div className="flex items-center space-x-3">
-                 <div className="text-right hidden sm:block">
-                   <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                     {user?.name || 'User'}
-                   </p>
-                   <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                     {user?.email}
-                   </p>
-                 </div>
-                 <button
-                   onClick={() => router.push('/profile')}
-                   className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} flex items-center justify-center hover-scale cursor-pointer transition-colors`}
-                 >
-                   <User className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-                 </button>
-               </div>
-             </div>
+                {/* User Profile */}
+                <div className="flex items-center space-x-3">
+                  <div className="text-right hidden sm:block">
+                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {user?.name || 'User'}
+                    </p>
+                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {user?.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => router.push('/profile')}
+                    className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} flex items-center justify-center hover-scale cursor-pointer transition-colors`}
+                  >
+                    <User className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                  </button>
+                </div>
+              </div>
           </div>
         </header>
 

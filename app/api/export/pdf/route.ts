@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
-import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+// Extend jsPDF with autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: typeof autoTable
+  }
+}
 
 // Helper function to verify JWT token
 async function verifyToken(request: NextRequest) {
@@ -33,20 +40,34 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user and their responses
+    // Get responseId from query parameters
+    const { searchParams } = new URL(request.url)
+    const responseId = searchParams.get('responseId')
+
+    if (!responseId) {
+      return NextResponse.json(
+        { error: 'Response ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Get user info
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true }
     })
 
-    const responses = await prisma.eSGResponse.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
+    // Get specific response
+    const response = await prisma.eSGResponse.findFirst({
+      where: { 
+        id: responseId,
+        userId: userId // Ensure user can only access their own responses
+      }
     })
 
-    if (responses.length === 0) {
+    if (!response) {
       return NextResponse.json(
-        { error: 'No data to export' },
+        { error: 'Response not found' },
         { status: 404 }
       )
     }
@@ -56,20 +77,20 @@ export async function GET(request: NextRequest) {
     
     // Title
     doc.setFontSize(20)
-    doc.text('ESG Questionnaire Summary', 20, 20)
+    doc.text('ESG Questionnaire Response', 20, 20)
     
     // User info
     doc.setFontSize(12)
-    doc.text(`Generated for: ${user?.name}`, 20, 35)
-    doc.text(`Email: ${user?.email}`, 20, 45)
+    doc.text(`Generated for: ${user?.name || 'N/A'}`, 20, 35)
+    doc.text(`Email: ${user?.email || 'N/A'}`, 20, 45)
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 55)
+    doc.text(`Response ID: ${responseId}`, 20, 65)
 
-    let yPosition = 75
+    let yPosition = 85
 
-    // Latest response summary
-    const latestResponse = responses[0]
+    // Response details
     doc.setFontSize(16)
-    doc.text(`Financial Year: ${latestResponse.financialYear}`, 20, yPosition)
+    doc.text(`Financial Year: ${response.financialYear || 'N/A'}`, 20, yPosition)
     yPosition += 15
 
     // Environmental metrics
@@ -79,13 +100,13 @@ export async function GET(request: NextRequest) {
 
     const envData = [
       ['Metric', 'Value', 'Unit'],
-      ['Total Electricity Consumption', latestResponse.totalElectricityConsumption?.toLocaleString() || 'N/A', 'kWh'],
-      ['Renewable Electricity Consumption', latestResponse.renewableElectricityConsumption?.toLocaleString() || 'N/A', 'kWh'],
-      ['Total Fuel Consumption', latestResponse.totalFuelConsumption?.toLocaleString() || 'N/A', 'liters'],
-      ['Carbon Emissions', latestResponse.carbonEmissions?.toLocaleString() || 'N/A', 'T CO2e'],
+      ['Total Electricity Consumption', response.totalElectricityConsumption?.toLocaleString() || 'N/A', 'kWh'],
+      ['Renewable Electricity Consumption', response.renewableElectricityConsumption?.toLocaleString() || 'N/A', 'kWh'],
+      ['Total Fuel Consumption', response.totalFuelConsumption?.toLocaleString() || 'N/A', 'liters'],
+      ['Carbon Emissions', response.carbonEmissions?.toLocaleString() || 'N/A', 'T CO2e'],
     ]
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [envData[0]],
       body: envData.slice(1),
@@ -102,13 +123,13 @@ export async function GET(request: NextRequest) {
 
     const socialData = [
       ['Metric', 'Value', 'Unit'],
-      ['Total Employees', latestResponse.totalEmployees?.toLocaleString() || 'N/A', ''],
-      ['Female Employees', latestResponse.femaleEmployees?.toLocaleString() || 'N/A', ''],
-      ['Avg Training Hours per Employee', latestResponse.avgTrainingHoursPerEmployee?.toString() || 'N/A', 'hours'],
-      ['Community Investment Spend', latestResponse.communityInvestmentSpend ? `₹${latestResponse.communityInvestmentSpend.toLocaleString()}` : 'N/A', 'INR'],
+      ['Total Employees', response.totalEmployees?.toLocaleString() || 'N/A', ''],
+      ['Female Employees', response.femaleEmployees?.toLocaleString() || 'N/A', ''],
+      ['Avg Training Hours per Employee', response.avgTrainingHoursPerEmployee?.toString() || 'N/A', 'hours'],
+      ['Community Investment Spend', response.communityInvestmentSpend ? `₹${response.communityInvestmentSpend.toLocaleString()}` : 'N/A', 'INR'],
     ]
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [socialData[0]],
       body: socialData.slice(1),
@@ -125,12 +146,12 @@ export async function GET(request: NextRequest) {
 
     const govData = [
       ['Metric', 'Value', 'Unit'],
-      ['Independent Board Members', latestResponse.independentBoardMembersPercent ? `${latestResponse.independentBoardMembersPercent}%` : 'N/A', ''],
-      ['Data Privacy Policy', latestResponse.hasDataPrivacyPolicy ? 'Yes' : 'No', ''],
-      ['Total Revenue', latestResponse.totalRevenue ? `₹${latestResponse.totalRevenue.toLocaleString()}` : 'N/A', 'INR'],
+      ['Independent Board Members', response.independentBoardMembersPercent ? `${response.independentBoardMembersPercent}%` : 'N/A', ''],
+      ['Data Privacy Policy', response.hasDataPrivacyPolicy ? 'Yes' : 'No', ''],
+      ['Total Revenue', response.totalRevenue ? `₹${response.totalRevenue.toLocaleString()}` : 'N/A', 'INR'],
     ]
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [govData[0]],
       body: govData.slice(1),
@@ -147,13 +168,13 @@ export async function GET(request: NextRequest) {
 
     const calcData = [
       ['Metric', 'Value', 'Unit'],
-      ['Carbon Intensity', latestResponse.carbonIntensity?.toFixed(6) || 'N/A', 'T CO2e/INR'],
-      ['Renewable Electricity Ratio', latestResponse.renewableElectricityRatio ? `${latestResponse.renewableElectricityRatio.toFixed(2)}%` : 'N/A', ''],
-      ['Diversity Ratio', latestResponse.diversityRatio ? `${latestResponse.diversityRatio.toFixed(2)}%` : 'N/A', ''],
-      ['Community Spend Ratio', latestResponse.communitySpendRatio ? `${latestResponse.communitySpendRatio.toFixed(2)}%` : 'N/A', ''],
+      ['Carbon Intensity', response.carbonIntensity?.toFixed(6) || 'N/A', 'T CO2e/INR'],
+      ['Renewable Electricity Ratio', response.renewableElectricityRatio ? `${response.renewableElectricityRatio.toFixed(2)}%` : 'N/A', ''],
+      ['Diversity Ratio', response.diversityRatio ? `${response.diversityRatio.toFixed(2)}%` : 'N/A', ''],
+      ['Community Spend Ratio', response.communitySpendRatio ? `${response.communitySpendRatio.toFixed(2)}%` : 'N/A', ''],
     ]
 
-    ;(doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [calcData[0]],
       body: calcData.slice(1),
@@ -167,15 +188,20 @@ export async function GET(request: NextRequest) {
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="esg-questionnaire-summary.pdf"'
+        'Content-Disposition': `attachment; filename="esg-response-${responseId}.pdf"`,
+        'Cache-Control': 'no-cache'
       }
     })
 
   } catch (error) {
     console.error('Error generating PDF:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
-} 
+}

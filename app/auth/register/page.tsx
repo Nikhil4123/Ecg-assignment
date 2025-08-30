@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { User, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import ThemeToggle from '../../components/ThemeToggle'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -16,7 +17,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
-  const { isDarkMode, toggleDarkMode } = useTheme()
+  const { isDarkMode } = useTheme()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,12 +66,7 @@ export default function RegisterPage() {
           {/* Right side controls */}
           <div className="flex items-center space-x-4">
             {/* Dark mode toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
-            >
-              {isDarkMode ? '☀️' : '🌙'}
-            </button>
+            <ThemeToggle variant="switch" size="md" />
 
             {/* Back to home */}
             <Link
@@ -106,12 +102,6 @@ export default function RegisterPage() {
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
-              {error && (
-                <div className={`${isDarkMode ? 'bg-red-900/50 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-600'} border px-4 py-3 rounded-lg text-sm flex items-center space-x-2`}>
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span>{error}</span>
-                </div>
-              )}
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">

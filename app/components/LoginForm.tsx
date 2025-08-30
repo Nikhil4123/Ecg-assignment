@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useNotifications } from '../context/NotificationContext'
 import { 
   Mail, 
   Lock, 
@@ -22,26 +23,26 @@ export default function LoginForm() {
   const router = useRouter()
   const { login } = useAuth()
   const { isDarkMode } = useTheme()
+  const { success, error: showError } = useNotifications()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
-      const success = await login(email, password)
-      if (success) {
-        router.push('/dashboard')
+      const loginSuccess = await login(email, password)
+      if (loginSuccess) {
+        success('Login Successful', 'Welcome back! Redirecting to dashboard...')
+        setTimeout(() => router.push('/dashboard'), 1000)
       } else {
-        setError('Invalid email or password')
+        showError('Login Failed', 'Invalid email or password. Please try again.')
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      showError('Login Error', 'An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -65,14 +66,6 @@ export default function LoginForm() {
 
         {/* Form */}
         <div className={`card p-8 animate-fade-in-up`} style={{ animationDelay: '0.2s' }}>
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-fade-in-up">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
-              </div>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
