@@ -58,18 +58,18 @@ export default function ResponseExportManager({ response, className = '' }: Resp
         throw new Error('Authentication token not found')
       }
 
-      const response = await fetch(`/api/export/${format}?responseId=${response.id}`, {
+      const fetchResponse = await fetch(`/api/export/${format}?responseId=${response.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+      if (!fetchResponse.ok) {
+        const errorData = await fetchResponse.json().catch(() => ({}))
         throw new Error(errorData.error || `Failed to export ${format.toUpperCase()}`)
       }
 
-      const blob = await response.blob()
+      const blob = await fetchResponse.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
