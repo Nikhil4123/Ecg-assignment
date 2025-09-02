@@ -5,9 +5,6 @@ import { useNotifications } from '../context/NotificationContext'
 import { Leaf, Users, Shield, Save, ChevronDown, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useRef } from 'react'
-// Add pdfjs for PDF parsing
-import * as pdfjs from 'pdfjs-dist'
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 
 interface ESGData {
   financialYear: string
@@ -188,8 +185,10 @@ export default function ESGQuestionnaire() {
   const handlePdfImport = async (file: File) => {
     setIsPdfLoading(true)
     try {
+      const pdfjsLib: any = await import('pdfjs-dist')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
       const arrayBuffer = await file.arrayBuffer()
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       const numPages = pdf.numPages
       let fullText = ''
 
