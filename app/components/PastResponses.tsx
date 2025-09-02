@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { Calendar, Eye, Download, FileText, Clock, TrendingUp, ChevronRight, CheckCircle, XCircle } from 'lucide-react'
+import { useNotifications } from '../context/NotificationContext'
+import { Calendar, Eye, Download, FileText, Clock, TrendingUp, ChevronRight, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react'
 
 interface ESGResponse {
   id: string
@@ -29,9 +30,12 @@ interface ESGResponse {
 export default function PastResponses() {
   const { user } = useAuth()
   const { isDarkMode } = useTheme()
+  const { success, error: showError, warning } = useNotifications()
   const [responses, setResponses] = useState<ESGResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedResponse, setSelectedResponse] = useState<ESGResponse | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchResponses()
@@ -78,6 +82,44 @@ export default function PastResponses() {
     } catch (error) {
       console.error(`Error exporting ${format}:`, error)
     }
+  }
+
+  const deleteResponse = async (responseId: string) => {
+    setDeleting(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/responses/${responseId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        setResponses(prev => prev.filter(r => r.id !== responseId))
+        setDeleteConfirm(null)
+        success('Response Deleted', 'The ESG response has been successfully deleted.')
+      } else {
+        showError('Delete Failed', 'Unable to delete the response. Please try again.')
+      }
+    } catch (error) {
+      showError('Delete Error', 'An unexpected error occurred while deleting.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleDeleteClick = (e: React.MouseEvent, responseId: string) => {
+    e.stopPropagation()
+    setDeleteConfirm(responseId)
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm(null)
+  }
+
+  const handleDeleteConfirm = (responseId: string) => {
+    deleteResponse(responseId)
   }
 
   if (loading) {
@@ -149,6 +191,17 @@ export default function PastResponses() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <button
+                      onClick={(e) => handleDeleteClick(e, response.id)}
+                      className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
+                        isDarkMode 
+                          ? 'text-red-400 hover:bg-red-900/20 hover:text-red-300' 
+                          : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                      }`}
+                      title="Delete Response"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                     <ChevronRight className={`w-5 h-5 transition-transform duration-200 ${
                       selectedResponse?.id === response.id ? 'rotate-90' : ''
                     } ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
@@ -303,6 +356,17 @@ export default function PastResponses() {
                         <Download className="w-4 h-4" />
                         <span>Export Excel</span>
                       </button>
+                      <button
+                        onClick={(e) => handleDeleteClick(e, response.id)}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          isDarkMode 
+                            ? 'bg-red-600 hover:bg-red-700 text-white' 
+                            : 'bg-red-600 hover:bg-red-700 text-white'
+                        }`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Response</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -311,6 +375,64 @@ export default function PastResponses() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className={`max-w-md w-full mx-4 p-6 rounded-2xl shadow-2xl ${
+            isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+          }`}>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Delete Response
+                </h3>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  This action cannot be undone
+                </p>
+              </div>
+            </div>
+            
+            <p className={`mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Are you sure you want to delete this ESG response? This will permanently remove all data associated with this submission.
+            </p>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={handleDeleteCancel}
+                disabled={deleting}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                } disabled:opacity-50`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteConfirm(deleteConfirm)}
+                disabled={deleting}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-2`}
+              >
+                {deleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

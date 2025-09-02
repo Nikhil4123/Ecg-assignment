@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext'
 import { useTheme } from './context/ThemeContext'
 import Dashboard from './components/Dashboard'
 import LandingPage from './components/LandingPage'
+import NotificationContainer from './components/NotificationContainer'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -28,6 +29,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <NotificationContainer />
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
       </div>
     )
@@ -40,9 +42,19 @@ export default function Home() {
 
   // If user is logged in, show dashboard
   if (user) {
-    return <Dashboard />
+    return (
+      <>
+        <NotificationContainer />
+        <Dashboard />
+      </>
+    )
   }
 
   // Otherwise show landing page
-  return <LandingPage />
+  return (
+    <>
+      <NotificationContainer />
+      <LandingPage />
+    </>
+  )
 } 

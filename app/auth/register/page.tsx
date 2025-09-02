@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { useNotifications } from '../../context/NotificationContext'
 import { User, Mail, Lock, Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import ThemeToggle from '../../components/ThemeToggle'
+import NotificationContainer from '../../components/NotificationContainer'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -18,28 +20,38 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const { isDarkMode } = useTheme()
+  const { success, error: showError, warning } = useNotifications()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      const errorMessage = 'Passwords do not match'
+      setError(errorMessage)
+      showError('Validation Error', errorMessage)
       return
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long')
+      const errorMessage = 'Password must be at least 6 characters long'
+      setError(errorMessage)
+      warning('Password Requirements', errorMessage)
       return
     }
 
     setLoading(true)
-    const success = await register(name, email, password)
-    if (success) {
+    const registerSuccess = await register(name, email, password)
+    if (registerSuccess) {
+      success('Registration Successful', 'Welcome to ESG Platform! Your account has been created successfully.')
       // Redirect to dashboard on successful registration
-      window.location.href = '/dashboard'
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 2000)
     } else {
-      setError('Registration failed. Email might already be in use.')
+      const errorMessage = 'Registration failed. Email might already be in use.'
+      setError(errorMessage)
+      showError('Registration Failed', errorMessage)
     }
     setLoading(false)
   }
@@ -52,6 +64,7 @@ export default function RegisterPage() {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col`}>
+      <NotificationContainer />
       {/* Header */}
       <header className={`px-6 py-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">

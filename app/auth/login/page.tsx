@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { useNotifications } from '../../context/NotificationContext'
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import ThemeToggle from '../../components/ThemeToggle'
+import NotificationContainer from '../../components/NotificationContainer'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -15,24 +17,31 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const { isDarkMode, toggleDarkMode } = useTheme()
+  const { success, error: showError } = useNotifications()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    const success = await login(email, password)
-    if (success) {
+    const loginSuccess = await login(email, password)
+    if (loginSuccess) {
+      success('Login Successful', 'Welcome back to ESG Platform!')
       // Redirect to dashboard on successful login
-      window.location.href = '/dashboard'
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1500)
     } else {
-      setError('Invalid email or password')
+      const errorMessage = 'Invalid email or password'
+      setError(errorMessage)
+      showError('Login Failed', errorMessage)
     }
     setLoading(false)
   }
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col`}>
+      <NotificationContainer />
       {/* Header */}
       <header className={`px-6 py-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">

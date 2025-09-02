@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Shield } from 'lucide-react'
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Shield, ChevronDown } from 'lucide-react'
 import ExportManager from './ExportManager'
 
 interface ESGResponse {
@@ -33,6 +33,7 @@ export default function SummaryPage() {
   const { isDarkMode } = useTheme()
   const [responses, setResponses] = useState<ESGResponse[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedYear, setSelectedYear] = useState<string>('all')
 
   useEffect(() => {
     fetchResponses()
@@ -57,7 +58,16 @@ export default function SummaryPage() {
     }
   }
 
+  // Year options and filtering (hooks must be before any returns)
+  const availableYears = useMemo(
+    () => Array.from(new Set(responses.map(r => r.financialYear))).sort((a, b) => Number(a) - Number(b)),
+    [responses]
+  )
 
+  const filteredResponses = useMemo(
+    () => (selectedYear === 'all' ? responses : responses.filter(r => r.financialYear === selectedYear)),
+    [responses, selectedYear]
+  )
 
   if (loading) {
     return (
@@ -80,28 +90,28 @@ export default function SummaryPage() {
   }
 
   // Prepare data for charts
-  const latestResponse = responses[responses.length - 1]
+  const latestResponse = filteredResponses[filteredResponses.length - 1]
   
-  const environmentalData = [
+  const environmentalData = latestResponse ? [
     { name: 'Total Electricity (kWh)', value: latestResponse.totalElectricityConsumption },
     { name: 'Renewable Electricity (kWh)', value: latestResponse.renewableElectricityConsumption },
     { name: 'Total Fuel (liters)', value: latestResponse.totalFuelConsumption },
     { name: 'Carbon Emissions (T CO2e)', value: latestResponse.carbonEmissions },
-  ]
+  ] : []
 
-  const calculatedMetricsData = [
+  const calculatedMetricsData = latestResponse ? [
     { name: 'Carbon Intensity', value: latestResponse.carbonIntensity },
     { name: 'Renewable Ratio (%)', value: latestResponse.renewableElectricityRatio },
     { name: 'Diversity Ratio (%)', value: latestResponse.diversityRatio },
     { name: 'Community Spend (%)', value: latestResponse.communitySpendRatio },
-  ]
+  ] : []
 
-  const socialData = [
+  const socialData = latestResponse ? [
     { name: 'Total Employees', value: latestResponse.totalEmployees },
     { name: 'Female Employees', value: latestResponse.femaleEmployees },
     { name: 'Avg Training Hours', value: latestResponse.avgTrainingHoursPerEmployee },
     { name: 'Community Investment (INR)', value: latestResponse.communityInvestmentSpend },
-  ]
+  ] : []
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -121,11 +131,45 @@ export default function SummaryPage() {
                 </p>
               </div>
             </div>
-                         <ExportManager responses={responses} />
+            <div className="flex items-center space-x-4">
+              <div>
+                <label htmlFor="yearFilter" className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Financial Year
+                </label>
+                <div className="relative">
+                  <select
+                    id="yearFilter"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className={`appearance-none pr-10 pl-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+                      isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                  >
+                    <option value="all">All Years</option>
+                    {availableYears.map(year => (
+                      <option key={year} value={year}>{year}-{(Number(year) + 1).toString().slice(-2)}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} pointer-events-none`} />
+                </div>
+              </div>
+              <ExportManager responses={filteredResponses} />
+            </div>
           </div>
         </div>
 
         <div className="p-6 space-y-8">
+          {/* Empty state for selected filter */}
+          {filteredResponses.length === 0 ? (
+            <div className="text-center py-12 animate-fade-in-up">
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}>
+                <TrendingUp className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              </div>
+              <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No Data for Selected Year</h3>
+              <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Try choosing another year or select All Years.</p>
+            </div>
+          ) : (
+          <>
           {/* Key Metrics Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className={`p-6 rounded-xl border hover-lift transition-all duration-200 animate-fade-in-up ${
@@ -297,7 +341,7 @@ export default function SummaryPage() {
           </div>
 
           {/* Historical Data */}
-          {responses.length > 1 && (
+          {filteredResponses.length > 1 && (
             <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-white'} border ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} rounded-xl p-6 hover-lift transition-all duration-200 animate-fade-in-up`} style={{ animationDelay: '900ms' }}>
               <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4 flex items-center space-x-2`}>
                 <div className={`w-8 h-8 rounded-lg ${isDarkMode ? 'bg-yellow-600' : 'bg-yellow-100'} flex items-center justify-center`}>
@@ -306,7 +350,7 @@ export default function SummaryPage() {
                 <span>Historical Trends</span>
               </h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={responses}>
+                <BarChart data={filteredResponses}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="financialYear" tick={{ fill: isDarkMode ? '#d1d5db' : '#374151' }} />
                   <YAxis tick={{ fill: isDarkMode ? '#d1d5db' : '#374151' }} />
@@ -323,6 +367,7 @@ export default function SummaryPage() {
               </ResponsiveContainer>
             </div>
           )}
+          </>) }
         </div>
       </div>
     </div>

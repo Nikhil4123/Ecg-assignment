@@ -41,7 +41,7 @@ export default function LandingPage() {
     setIsVisible(true)
     
     const handleScroll = () => {
-      const sections = ['hero', 'features', 'testimonials', 'cta']
+      const sections = ['Hero', 'features', 'testimonials', 'cta']
       const scrollPosition = window.scrollY + 100
       
       for (let i = sections.length - 1; i >= 0; i--) {
