@@ -158,7 +158,7 @@ export default function ESGQuestionnaire() {
       if (response.ok) {
         success('Data Saved Successfully', 'Your ESG response has been recorded and is ready for analysis.')
         // Update the route to match the SummaryPage component route
-        router.push('/summary') // or whatever the correct route is for your SummaryPage component
+        // router.push('/summary') // or whatever the correct route is for your SummaryPage component
       } else {
         showError('Save Failed', 'Unable to save ESG data. Please try again.')
       }
